@@ -43,4 +43,28 @@ if neededCard == "":
 cardParent = neededCard.find_parent()
 link = cardParent.get('href')
 
-print(link)
+# now that we have the link we need, lets set get the page and set up the new BeautifulSoup object
+page = requests.get(link)
+soup = BeautifulSoup(page.text, 'html.parser')
+
+円 = soup.select_one('h4.fw-bold.d-inline-block').text[:-1].strip()
+
+cardImg = soup.select_one('img.vimg')
+cardImgLink = cardImg['src']
+
+rawCardClassif = soup.select("th.text-primary.w-25.border-end-0")
+rawCardInfo = soup.select('td.text-dark.w-25.border-start-0')
+
+cardDict = {}
+cardDict.update({"カードショップ" : "遊々亭"})
+cardDict.update({"値段" : int(円)})
+cardDict.update({"レアリティ" : rarity})
+
+if len(rawCardClassif) == len(rawCardInfo):
+    for x in range(len(rawCardClassif)):
+        cardDict.update({rawCardClassif[x].text.strip() : rawCardInfo[x].text.strip()})
+else:
+    print("These lists should be the same size, something went wrong")
+    exit()
+
+print(cardDict)
