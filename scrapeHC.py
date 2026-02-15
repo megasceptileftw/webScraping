@@ -1,9 +1,22 @@
 from bs4 import BeautifulSoup
 import requests
 
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_0.png = empty trigger
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1.png = normal trigger icon
+# double soul just puts two normal trigger icons
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_I.png = choice icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1A.png = wind icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1E.png = shot icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_F.png = goldbar icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_B.png = bag icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1G.png = pants icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_D.png = book icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_C.png = door icon
+# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1H.png = standby icon
+
 # somehow get the Weiss card tag and rarity from the user or something
-cardTag = "CCS/W113-001"
-rarity = "RR"
+cardTag = "CCS/W113-079"
+rarity = "R"
 
 # search for the card on yuyutei
 url = "https://yuyu-tei.jp/sell/ws/s/search?search_word=" + cardTag
@@ -59,6 +72,9 @@ cardDict = {}
 cardDict.update({"カードショップ" : "遊々亭"})
 cardDict.update({"値段" : int(円)})
 cardDict.update({"レアリティ" : rarity})
+
+if rawCardInfo[0].text.strip() == "クライマックス" or rawCardInfo[0].text.strip() == "イベント":
+    rawCardInfo.pop()
 
 if len(rawCardClassif) == len(rawCardInfo):
     for x in range(len(rawCardClassif)):
