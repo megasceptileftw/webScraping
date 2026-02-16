@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
+import os
+from pathlib import Path
 
 # https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_0.png = empty trigger
 # https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1.png = normal trigger icon
@@ -13,6 +15,39 @@ import requests
 # https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_D.png = book icon
 # https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_C.png = door icon
 # https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1H.png = standby icon
+
+def createDir(directory):
+    try:
+        os.mkdir(directory)
+        print(f"Directory '{directory}' created successfully.")
+    except FileExistsError:
+        print(f"Directory '{directory}' already exists.")
+    except PermissionError:
+        print(f"Permission denied: Unable to create '{directory}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def downloadImg(imgURL, savePath, fileName):
+    
+    response = requests.get(imgURL)
+
+    fullPath = os.path.join(savePath, fileName)
+
+    if response.status_code == 200:
+        with open(fullPath, 'wb') as file:
+            file.write(response.content)
+            print(f"Image downloaded successfully to {savePath}")
+    else:
+        print(f"Failed to download image. Status code: {response.status_code}")
+
+# lets set up the necessary directories
+imgDir = "images"
+triggerDir = "images/triggers"
+cardDir = "images/cards"
+
+createDir(imgDir)
+createDir(triggerDir)
+createDir(cardDir)
 
 # somehow get the Weiss card tag and rarity from the user or something
 cardTag = "CCS/W113-079"
@@ -60,15 +95,29 @@ link = cardParent.get('href')
 page = requests.get(link)
 soup = BeautifulSoup(page.text, 'html.parser')
 
+cardDict = {}
+
 円 = soup.select_one('h4.fw-bold.d-inline-block').text[:-1].strip()
 
 cardImg = soup.select_one('img.vimg')
 cardImgLink = cardImg['src']
 
+cardFileName = cardTag.replace("/", "_")
+cardFileName = cardFileName + ".jpg"
+
+fullPath = os.path.join(cardDir, cardFileName)
+
+if os.path.isfile(fullPath):
+    print(f"The file '{cardFileName}' already exists in the directory")
+else:
+    downloadImg(cardImgLink, cardDir, cardFileName)
+
+cardDict.update({'カードイメージ' : cardDir + '/' + cardFileName})
+
 rawCardClassif = soup.select("th.text-primary.w-25.border-end-0")
 rawCardInfo = soup.select('td.text-dark.w-25.border-start-0')
 
-cardDict = {}
+
 cardDict.update({"カードショップ" : "遊々亭"})
 cardDict.update({"値段" : int(円)})
 cardDict.update({"レアリティ" : rarity})
@@ -78,7 +127,12 @@ if rawCardInfo[0].text.strip() == "クライマックス" or rawCardInfo[0].text
 
 if len(rawCardClassif) == len(rawCardInfo):
     for x in range(len(rawCardClassif)):
+
         cardDict.update({rawCardClassif[x].text.strip() : rawCardInfo[x].text.strip()})
+
+        if rawCardClassif[x].text.strip() == "トリガー":
+            triggerImglink = rawCardInfo[x].find('img')['src']
+            print(triggerImglink)
 else:
     print("These lists should be the same size, something went wrong")
     exit()
