@@ -1,20 +1,21 @@
 from bs4 import BeautifulSoup
 import requests
 import os
-from pathlib import Path
+from datetime import datetime
 
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_0.png = empty trigger
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1.png = normal trigger icon
-# double soul just puts two normal trigger icons
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_I.png = choice icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1A.png = wind icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1E.png = shot icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_F.png = goldbar icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_B.png = bag icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1G.png = pants icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_D.png = book icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_C.png = door icon
-# https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1H.png = standby icon
+triggerDict = {
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_0.png" : "empty_trigger.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1.png" : "trigger.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_I.png" : "choice.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1A.png" : "wind.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1E.png" : "shot.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_F.png" : "goldbar.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_B.png" : "bag.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1G.png" : "pants.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_D.png" : "book.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_C.png" : "door.png",
+    "https://cdn.yuyu-tei.jp/images/icon/ws/icon_tri_1H.png" : "standby.png"    
+               }
 
 def createDir(directory):
     try:
@@ -95,44 +96,75 @@ link = cardParent.get('href')
 page = requests.get(link)
 soup = BeautifulSoup(page.text, 'html.parser')
 
+# creating dictionary to hold our data before adding it do db hypothetically
 cardDict = {}
 
+# get cost of card
 円 = soup.select_one('h4.fw-bold.d-inline-block').text[:-1].strip()
 
+# get card img
 cardImg = soup.select_one('img.vimg')
 cardImgLink = cardImg['src']
 
+# need to make card tag suitable for being a filename
 cardFileName = cardTag.replace("/", "_")
 cardFileName = cardFileName + ".jpg"
 
+# create full path to card directory
 fullPath = os.path.join(cardDir, cardFileName)
 
+# checking if the image is already in the card directory, download it if not
 if os.path.isfile(fullPath):
     print(f"The file '{cardFileName}' already exists in the directory")
 else:
     downloadImg(cardImgLink, cardDir, cardFileName)
 
+# add card tag and location of image to dictionary
+cardDict.update({'カード' : cardTag})
 cardDict.update({'カードイメージ' : cardDir + '/' + cardFileName})
 
-rawCardClassif = soup.select("th.text-primary.w-25.border-end-0")
-rawCardInfo = soup.select('td.text-dark.w-25.border-start-0')
+# get datetime and price in a list
+currDatetime = datetime.now().replace(microsecond=0)
+datetimeAndPrice = [currDatetime, int(円)]
 
-
+# adding important info to the dictionary
 cardDict.update({"カードショップ" : "遊々亭"})
 cardDict.update({"値段" : int(円)})
 cardDict.update({"レアリティ" : rarity})
 
+
+# get the information about the card from yuyutei (like type, color, level, etc.)
+# we only need to do this if the card is not in the database, but we don't have database compatibility yet
+rawCardClassif = soup.select("th.text-primary.w-25.border-end-0")
+rawCardInfo = soup.select('td.text-dark.w-25.border-start-0')
+
+# size of these lists is the same when it is a character, but not when it is a climax or event, so we are fixing for that
 if rawCardInfo[0].text.strip() == "クライマックス" or rawCardInfo[0].text.strip() == "イベント":
     rawCardInfo.pop()
 
+# length of raw card classifications and raw card information should be the same
 if len(rawCardClassif) == len(rawCardInfo):
+    # iterate through the lists and add them to the dictionary
     for x in range(len(rawCardClassif)):
-
         cardDict.update({rawCardClassif[x].text.strip() : rawCardInfo[x].text.strip()})
-
+        # Yuyutei has the trigger icon as an image so we need to find the link and download it if we haven't already
         if rawCardClassif[x].text.strip() == "トリガー":
+            # gettin da link
             triggerImglink = rawCardInfo[x].find('img')['src']
-            print(triggerImglink)
+            # we check if this link is in the dictionary of all the links, if it isn't then something is wrong
+            if triggerImglink in triggerDict:
+                triggerFileName = triggerDict.get(triggerImglink)
+            else:
+                print("This link isn't in the trigger dictionary")
+                exit()
+            # get the full path to the trigger directory with the file name and check if it is in the folder, if not download it
+            fullPath = os.path.join(triggerDir, triggerFileName)
+            if os.path.isfile(fullPath):
+                print(f"The file '{triggerFileName}' already exists in the directory")
+            else:
+                downloadImg(triggerImglink, triggerDir, triggerFileName)
+            # update trigger to the desired image location
+            cardDict.update({rawCardClassif[x].text.strip() : triggerDir + '/' + triggerFileName})
 else:
     print("These lists should be the same size, something went wrong")
     exit()
