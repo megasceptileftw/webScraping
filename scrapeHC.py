@@ -123,13 +123,13 @@ else:
 cardDict.update({'カード' : cardTag})
 cardDict.update({'カードイメージ' : cardDir + '/' + cardFileName})
 
-# get datetime and price in a list
+# get datetime for price
 currDatetime = datetime.now().replace(microsecond=0)
-datetimeAndPrice = [currDatetime, int(円)]
 
 # adding important info to the dictionary
 cardDict.update({"カードショップ" : "遊々亭"})
 cardDict.update({"値段" : int(円)})
+cardDict.update({"datetime" : str(currDatetime)})
 cardDict.update({"レアリティ" : rarity})
 
 
@@ -147,6 +147,11 @@ if len(rawCardClassif) == len(rawCardInfo):
     # iterate through the lists and add them to the dictionary
     for x in range(len(rawCardClassif)):
         cardDict.update({rawCardClassif[x].text.strip() : rawCardInfo[x].text.strip()})
+        
+        # some of the stuff added needs to become ints, so yeah
+        if rawCardClassif[x].text.strip() == "レベル" or rawCardClassif[x].text.strip() == "コスト" or rawCardClassif[x].text.strip() == "パワー" or rawCardClassif[x].text.strip() == "ソウル":
+            cardDict.update({rawCardClassif[x].text.strip() : int(rawCardInfo[x].text.strip())})
+
         # Yuyutei has the trigger icon as an image so we need to find the link and download it if we haven't already
         if rawCardClassif[x].text.strip() == "トリガー":
             # gettin da link
