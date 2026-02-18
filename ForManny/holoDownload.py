@@ -39,12 +39,12 @@ def dlHolo(url):
     cardInfo = cardSrc[-2:]
 
     set = cardInfo[0]
-    card = cardInfo[1]
-    cardName = set + "_" + card
+    cardName = cardInfo[1]
+    createDir("hololive_images/" + set)
 
-    url2download = "https://en.hololive-official-cardgame.com/wp-content/images/cardlist/" + set + "/" + card
+    url2download = "https://en.hololive-official-cardgame.com/wp-content/images/cardlist/" + set + "/" + cardName
 
-    downloadImg(url2download, "hololive_images", cardName)
+    downloadImg(url2download, "hololive_images/" + set, cardName)
 
 createDir("hololive_images")
 
