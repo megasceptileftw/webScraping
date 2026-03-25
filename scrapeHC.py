@@ -51,8 +51,8 @@ createDir(triggerDir)
 createDir(cardDir)
 
 # somehow get the Weiss card tag and rarity from the user or something
-cardTag = "CCS/W113-079"
-rarity = "R"
+cardTag = "KJ8/S123-004SP"
+rarity = "SP"
 
 # search for the card on yuyutei
 url = "https://yuyu-tei.jp/sell/ws/s/search?search_word=" + cardTag
@@ -101,6 +101,8 @@ cardDict = {}
 
 # get cost of card
 円 = soup.select_one('h4.fw-bold.d-inline-block').text[:-1].strip()
+# account for ,'s in price before we turn it into an int
+円 = 円.replace(",", "")
 
 # get card img
 cardImg = soup.select_one('img.vimg')
